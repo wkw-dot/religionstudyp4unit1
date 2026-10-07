@@ -1,1071 +1,878 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="zh-HK">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>友誼樹大冒險 - Friendship Tree Quest</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&family=Noto+Sans+TC:wght@500;700;900&display=swap" rel="stylesheet">
-    <style>
-        body {
-            font-family: 'Fredoka', 'Noto Sans TC', sans-serif;
-            touch-action: manipulation;
-            user-select: none;
-            -webkit-user-select: none;
-            overflow: hidden;
-            background-color: #0f172a;
-        }
-        .canvas-container {
-            position: relative;
-            width: 100vw;
-            height: 100vh;
-            max-width: 1200px;
-            max-height: 800px;
-            margin: auto;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
-        }
-        canvas {
-            display: block;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(to bottom, #38bdf8 0%, #bae6fd 45%, #a7f3d0 80%, #4ade80 100%);
-        }
-        .btn-bounce {
-            transition: transform 0.1s ease, box-shadow 0.1s ease;
-        }
-        .btn-bounce:active {
-            transform: scale(0.92);
-        }
-        ::-webkit-scrollbar {
-            width: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #f1f1f1;
-            border-radius: 10px;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #fbbf24;
-            border-radius: 10px;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>友誼樹大冒險 - Friendship Tree Quest</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Noto+Sans+TC:wght@600;800;900&display=swap" rel="stylesheet">
+  <style>
+    * {
+      touch-action: manipulation;
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      user-select: none;
+    }
+    body {
+      font-family: 'Noto Sans TC', sans-serif;
+      background-color: #1a2f1c;
+      overflow: hidden;
+      position: fixed;
+      width: 100%;
+      height: 100%;
+    }
+    .touch-btn {
+      touch-action: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .touch-btn:active {
+      transform: scale(0.92);
+      filter: brightness(0.9);
+    }
+    .text-stroke {
+      -webkit-text-stroke: 1px #000;
+    }
+    /* Custom scrollbar for review modal */
+    ::-webkit-scrollbar {
+      width: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 8px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #888;
+      border-radius: 8px;
+    }
+  </style>
 </head>
-<body class="flex items-center justify-center min-h-screen bg-slate-900 p-0 sm:p-4">
+<body class="flex flex-col h-screen w-screen bg-slate-900 text-white select-none">
 
-    <div class="canvas-container rounded-none sm:rounded-3xl overflow-hidden flex flex-col">
-        <!-- Game Canvas -->
-        <canvas id="gameCanvas"></canvas>
-
-        <!-- Top HUD -->
-        <div id="hud" class="absolute top-0 left-0 right-0 p-3 sm:p-4 flex flex-wrap gap-2 justify-between items-center pointer-events-none z-10">
-            <!-- Health Hearts & Live Score -->
-            <div class="flex items-center gap-3 bg-white/90 backdrop-blur-md px-4 py-2 rounded-full border-2 border-yellow-400 shadow-lg pointer-events-auto">
-                <div id="livesContainer" class="flex gap-1 text-2xl">
-                    ❤️ ❤️ ❤️
-                </div>
-                <div class="h-6 w-0.5 bg-slate-300"></div>
-                <div class="text-base sm:text-xl font-black text-amber-600">
-                    分數: <span id="scoreDisplay">0</span>
-                </div>
-            </div>
-
-            <!-- Live Timer & Collected Progress Counters -->
-            <div class="flex items-center gap-2 pointer-events-auto">
-                <!-- Stopwatch Display -->
-                <div class="bg-amber-500/90 backdrop-blur-md px-3.5 py-1.5 rounded-full border-2 border-amber-300 shadow-lg flex items-center gap-1.5 text-white">
-                    <span class="text-xl">⏱️</span>
-                    <div class="flex flex-col">
-                        <span class="text-[10px] font-bold leading-none text-amber-100">用時 Time</span>
-                        <span id="timerDisplay" class="text-sm sm:text-base font-black font-mono">00:00</span>
-                    </div>
-                </div>
-
-                <!-- Target Counter -->
-                <div class="bg-emerald-500/90 backdrop-blur-md px-4 py-2 rounded-full border-2 border-emerald-300 shadow-lg flex items-center gap-2 text-white">
-                    <span class="text-2xl">🍎</span>
-                    <div class="flex flex-col">
-                        <span class="text-xs font-bold leading-none text-emerald-100">正向品質</span>
-                        <span id="goodCounter" class="text-base sm:text-xl font-black">0 / 10</span>
-                    </div>
-                </div>
-
-                <!-- Warning Counter -->
-                <div class="bg-rose-500/90 backdrop-blur-md px-3 py-1.5 rounded-full border-2 border-rose-300 shadow-lg flex items-center gap-1.5 text-white">
-                    <span class="text-xl">⚠️</span>
-                    <div class="flex flex-col">
-                        <span class="text-[10px] font-bold leading-none text-rose-100">誤採壞行為</span>
-                        <span id="badCounter" class="text-sm sm:text-base font-black">0</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Educational Banner Popup -->
-        <div id="eduBanner" class="absolute top-20 left-1/2 -translate-x-1/2 transition-all duration-300 transform -translate-y-20 opacity-0 pointer-events-none z-20 w-11/12 max-w-md">
-            <div id="bannerBox" class="bg-white p-4 rounded-2xl border-4 shadow-2xl flex items-center gap-3">
-                <div id="bannerIcon" class="text-4xl sm:text-5xl">🌟</div>
-                <div>
-                    <h3 id="bannerTitle" class="text-xl font-black text-slate-800"></h3>
-                    <p id="bannerDesc" class="text-sm sm:text-base text-slate-600 font-semibold leading-tight"></p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Touch Controls for Mobile/Tablet -->
-        <div id="touchControls" class="absolute bottom-4 left-4 right-4 flex justify-between items-end pointer-events-auto sm:hidden z-10">
-            <div class="flex gap-2">
-                <button id="btnLeft" class="w-16 h-16 bg-white/80 rounded-2xl border-b-4 border-slate-300 active:bg-amber-100 flex items-center justify-center text-3xl shadow-lg active:translate-y-1">👈</button>
-                <button id="btnRight" class="w-16 h-16 bg-white/80 rounded-2xl border-b-4 border-slate-300 active:bg-amber-100 flex items-center justify-center text-3xl shadow-lg active:translate-y-1">👉</button>
-            </div>
-            <button id="btnJump" class="w-20 h-20 bg-amber-400 rounded-full border-b-4 border-amber-600 active:bg-amber-500 flex items-center justify-center text-3xl shadow-xl font-bold text-white active:translate-y-1">🚀</button>
-        </div>
-
-        <!-- Start Screen Overlay -->
-        <div id="startScreen" class="absolute inset-0 bg-gradient-to-b from-sky-400 via-emerald-300 to-green-500 flex flex-col items-center justify-center text-center p-6 z-30">
-            <div class="text-6xl sm:text-8xl mb-2 animate-bounce">🐿️🍎</div>
-            <h1 class="text-4xl sm:text-6xl font-black text-white drop-shadow-[0_4px_4px_rgba(0,0,0,0.3)] mb-2">
-                友誼樹大冒險
-            </h1>
-            <p class="text-amber-100 text-lg sm:text-2xl font-bold mb-4 drop-shadow">
-                速度越快，得分越高！看清字標，採集 10 個良好品質果實！
-            </p>
-
-            <div class="bg-white/90 backdrop-blur border-4 border-amber-300 rounded-2xl p-4 sm:p-6 max-w-md w-full shadow-2xl mb-6 text-left text-slate-700">
-                <h2 class="text-xl font-bold text-amber-600 mb-2 flex items-center gap-2">
-                    <span>🎯</span> 遊戲任務 (Mission):
-                </h2>
-                <p class="text-emerald-700 font-bold mb-3 text-sm sm:text-base">
-                    樹上共有 20 個高低錯落的鮮紅果實！看清文字標籤，<b>最快速度採集全部 10 個正向品質</b>（互相幫助、誠實、分享、禮貌、關心、合作、包容、耐心、友善、守信）！<b>越快完成，時間獎勵得分越高！</b>
-                </p>
-                <h2 class="text-base font-bold text-slate-800 mb-1 flex items-center gap-2">
-                    <span>🕹</span> 操作說明 (Controls):
-                </h2>
-                <ul class="space-y-1.5 text-xs sm:text-sm font-semibold">
-                    <li>✨ <b>左右移動:</b> 方向鍵 ← → / A D 鍵</li>
-                    <li>✨ <b>二段跳躍:</b> 空格鍵 Space / ↑ 鍵</li>
-                    <li class="text-emerald-600">🟢 <b>採集好品質:</b> +100 分 (+100 Points)</li>
-                    <li class="text-amber-600">⚡ <b>速度獎勵:</b> 越快完成獲得最高 +2000 時間加分！</li>
-                    <li class="text-rose-600">🔴 <b>誤採壞行為:</b> 扣 1 顆心及 50 分 (-1 Heart)</li>
-                </ul>
-            </div>
-
-            <button id="btnStart" class="btn-bounce bg-amber-400 hover:bg-amber-300 text-amber-950 font-black text-2xl sm:text-3xl px-10 py-4 rounded-full border-b-8 border-amber-600 shadow-2xl cursor-pointer">
-                開始冒險 START!
-            </button>
-        </div>
-
-        <!-- Scoreboard Modal -->
-        <div id="scoreboardModal" class="absolute inset-0 bg-slate-900/80 backdrop-blur-md hidden flex items-center justify-center p-4 z-40">
-            <div class="bg-gradient-to-b from-amber-50 to-orange-100 border-4 border-amber-400 rounded-3xl max-w-3xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
-                <div id="scoreHeader" class="bg-amber-400 p-4 text-center border-b-4 border-amber-500 relative">
-                    <h2 id="endTitle" class="text-3xl sm:text-4xl font-black text-amber-950">🏆 友誼樹複習榜 🏆</h2>
-                    <p class="text-amber-800 text-sm sm:text-base font-bold">Friendship Tree Review Scoreboard</p>
-                </div>
-
-                <div class="p-4 sm:p-6 overflow-y-auto space-y-5">
-                    <!-- Star Rating & Final Score -->
-                    <div class="text-center bg-white p-4 rounded-2xl border-2 border-amber-200 shadow-sm">
-                        <div id="finalStars" class="text-4xl sm:text-5xl mb-1">⭐ ⭐ ⭐</div>
-                        <p id="finalScoreText" class="text-3xl font-black text-amber-600">總得分: 0 分</p>
-                        <p id="finalRankDesc" class="text-slate-600 font-bold mt-1 text-sm sm:text-base">太棒了！你順利辨識所有文字，成功採集全部 10 個良好品質！</p>
-                    </div>
-
-                    <!-- Detailed Score Calculation Breakdown -->
-                    <div class="bg-amber-100/80 border-2 border-amber-300 rounded-2xl p-4 shadow-inner">
-                        <h3 class="text-base font-black text-amber-900 mb-2 flex items-center gap-1.5">
-                            <span>📊</span> 得分結算明細 (Score Calculation Breakdown):
-                        </h3>
-                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs sm:text-sm font-bold text-slate-700">
-                            <div class="bg-white p-2.5 rounded-xl border border-amber-200 text-center">
-                                <span class="text-slate-500 block text-[11px]">正向果實基礎分</span>
-                                <span id="bdGoodScore" class="text-emerald-600 text-base font-black">+1000</span>
-                            </div>
-                            <div class="bg-white p-2.5 rounded-xl border border-amber-200 text-center">
-                                <span class="text-slate-500 block text-[11px]">誤採壞行為扣分</span>
-                                <span id="bdBadDeduct" class="text-rose-600 text-base font-black">-0</span>
-                            </div>
-                            <div class="bg-white p-2.5 rounded-xl border border-amber-200 text-center">
-                                <span class="text-slate-500 block text-[11px]">速度時間加分 (Time)</span>
-                                <span id="bdTimeBonus" class="text-amber-600 text-base font-black">+1850</span>
-                            </div>
-                            <div class="bg-white p-2.5 rounded-xl border border-amber-200 text-center">
-                                <span class="text-slate-500 block text-[11px]">剩餘愛心加分</span>
-                                <span id="bdHeartBonus" class="text-rose-500 text-base font-black">+300</span>
-                            </div>
-                        </div>
-                        <p id="timeDetailNote" class="text-center text-xs text-amber-800 font-bold mt-2">⏱️ 總共用時：<span id="bdTotalTime">00:00</span>（越快採完獲得越高的時間加分！）</p>
-                    </div>
-
-                    <!-- Good vs Bad Value Recap Lists -->
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div class="bg-emerald-50 border-2 border-emerald-300 rounded-2xl p-4">
-                            <h3 class="text-base font-black text-emerald-800 flex items-center gap-2 mb-3">
-                                <span>🟢</span> 正向品質總覽 (Good Values - 10/10)
-                            </h3>
-                            <div id="goodValuesList" class="space-y-2 text-xs sm:text-sm"></div>
-                        </div>
-
-                        <div class="bg-rose-50 border-2 border-rose-300 rounded-2xl p-4">
-                            <h3 class="text-base font-black text-rose-800 flex items-center gap-2 mb-3">
-                                <span>🔴</span> 壞行為檢討 (Bad Behaviors Avoided)
-                            </h3>
-                            <div id="badValuesList" class="space-y-2 text-xs sm:text-sm"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="p-4 bg-amber-200/50 border-t-2 border-amber-300 flex flex-wrap justify-center gap-4">
-                    <button id="btnRestart" class="btn-bounce bg-emerald-500 hover:bg-emerald-400 text-white font-black text-lg sm:text-xl px-6 py-3 rounded-full border-b-4 border-emerald-700 shadow-lg cursor-pointer">
-                        🔄 再玩一次 Play Again
-                    </button>
-                    <button id="btnCertificate" class="btn-bounce bg-amber-500 hover:bg-amber-400 text-amber-950 font-black text-lg sm:text-xl px-6 py-3 rounded-full border-b-4 border-amber-700 shadow-lg cursor-pointer">
-                        📜 領取友誼大使證書
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Certificate Modal -->
-        <div id="certModal" class="absolute inset-0 bg-slate-950/85 backdrop-blur-lg hidden flex items-center justify-center p-4 z-50">
-            <div class="bg-amber-50 border-8 border-amber-400 rounded-2xl max-w-xl w-full p-6 text-center shadow-2xl relative">
-                <button id="btnCloseCert" class="absolute top-3 right-3 text-2xl font-bold text-slate-500 hover:text-slate-800">✖</button>
-                <div class="border-4 border-dashed border-amber-300 p-6 rounded-xl bg-white">
-                    <div class="text-5xl mb-2">🏅</div>
-                    <h2 class="text-3xl sm:text-4xl font-black text-amber-800">友誼大使榮譽證書</h2>
-                    <p class="text-xs text-amber-600 font-bold tracking-widest uppercase mb-4">Certificate of Friendship Hero</p>
-                    <p class="text-slate-600 text-sm sm:text-base font-semibold mb-2">茲證明熱心善良的小朋友：</p>
-                    <input id="playerNameInput" type="text" value="好朋友小勇士" class="text-center font-black text-xl text-amber-700 border-b-2 border-amber-400 outline-none px-2 py-1 mb-4 w-3/4 focus:border-amber-600">
-                    <p class="text-slate-700 text-xs sm:text-sm leading-relaxed mb-6">
-                        在《友誼樹大冒險》中精確辨識紅果實上的字詞，以優異的速度與智慧成功採集全部 <b>10 個正向品質</b>（包含<b>互相幫助、誠實、分享、禮貌、關心、合作、包容、耐心、友善、守信</b>），展現出優秀的友誼品德！
-                    </p>
-                    <div class="flex justify-between items-end text-xs text-slate-500 font-bold border-t border-slate-200 pt-4">
-                        <div>
-                            <p>頒發機構：森林小學校</p>
-                            <p id="certDate">日期：2026-10-05</p>
-                        </div>
-                        <div class="text-center">
-                            <span class="text-2xl">🌟</span>
-                            <p class="text-amber-600">五星級好朋友</p>
-                        </div>
-                    </div>
-                </div>
-                <button id="btnPrintCert" class="btn-bounce mt-4 bg-sky-500 hover:bg-sky-400 text-white font-black text-lg px-6 py-2 rounded-full border-b-4 border-sky-700 shadow-md">
-                    🖨️ 列印 / 儲存證書
-                </button>
-            </div>
-        </div>
+  <header class="flex justify-between items-center px-4 py-2 bg-emerald-900/90 border-b-4 border-emerald-700 shadow-md z-10">
+    <div class="flex items-center gap-3">
+      <div id="livesContainer" class="flex text-2xl gap-1">
+        <span>❤️</span><span>❤️</span><span>❤️</span>
+      </div>
+      <div class="bg-emerald-950/80 px-3 py-1 rounded-full text-amber-300 font-extrabold text-sm md:text-base border border-amber-500/30">
+        水果: <span id="fruitCount">0</span>/10
+      </div>
+    </div>
+    
+    <div class="text-center font-extrabold text-base md:text-xl text-emerald-200 tracking-wider">
+      🌳 友誼樹大冒險
     </div>
 
-    <script>
-        class SoundEngine {
-            constructor() {
-                this.ctx = null;
-            }
+    <div class="flex items-center gap-3">
+      <div class="bg-emerald-950/80 px-3 py-1 rounded-full text-cyan-300 font-extrabold text-sm md:text-base border border-cyan-500/30">
+        ⏱️ <span id="timerText">00:00</span>
+      </div>
+      <div class="bg-emerald-950/80 px-3 py-1 rounded-full text-yellow-300 font-extrabold text-sm md:text-base border border-yellow-500/30">
+        得分: <span id="scoreText">0</span>
+      </div>
+    </div>
+  </header>
 
-            init() {
-                if (!this.ctx) {
-                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
-                }
-            }
+  <main class="relative flex-1 w-full bg-sky-300 overflow-hidden">
+    <canvas id="gameCanvas" class="w-full h-full block"></canvas>
 
-            playJump() {
-                if (!this.ctx) return;
-                const osc = this.ctx.createOscillator();
-                const gain = this.ctx.createGain();
-                osc.type = 'sine';
-                osc.frequency.setValueAtTime(200, this.ctx.currentTime);
-                osc.frequency.exponentialRampToValueAtTime(500, this.ctx.currentTime + 0.15);
-                gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
-                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
-                osc.connect(gain);
-                gain.connect(this.ctx.destination);
-                osc.start();
-                osc.stop(this.ctx.currentTime + 0.15);
-            }
+    <!-- Damage Screen Flash -->
+    <div id="damageOverlay" class="pointer-events-none absolute inset-0 bg-red-600/30 opacity-0 transition-opacity duration-200 z-20"></div>
 
-            playGoodFruit() {
-                if (!this.ctx) return;
-                const now = this.ctx.currentTime;
-                [523.25, 659.25, 783.99, 1046.50].forEach((freq, idx) => {
-                    const osc = this.ctx.createOscillator();
-                    const gain = this.ctx.createGain();
-                    osc.type = 'triangle';
-                    osc.frequency.value = freq;
-                    gain.gain.setValueAtTime(0, now + idx * 0.05);
-                    gain.gain.linearRampToValueAtTime(0.2, now + idx * 0.05 + 0.02);
-                    gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.05 + 0.2);
-                    osc.connect(gain);
-                    gain.connect(this.ctx.destination);
-                    osc.start(now + idx * 0.05);
-                    osc.stop(now + idx * 0.05 + 0.2);
-                });
-            }
+    <!-- Start Overlay Screen -->
+    <div id="startOverlay" class="absolute inset-0 bg-slate-950/80 backdrop-blur-md flex flex-col justify-center items-center p-6 text-center z-30">
+      <div class="max-w-xl bg-emerald-900/90 border-4 border-amber-400 rounded-3xl p-6 shadow-2xl space-y-4">
+        <h1 class="text-3xl md:text-4xl font-black text-amber-300 drop-shadow-md">🌳 友誼樹大冒險 🐿️</h1>
+        <p class="text-base md:text-lg text-emerald-100 leading-relaxed">
+          歡迎來到友誼樹！樹上結滿了<span class="text-red-400 font-bold">紅色蘋果</span>，每個蘋果代表一種行為。
+        </p>
+        <div class="grid grid-cols-2 gap-3 text-left bg-emerald-950/70 p-4 rounded-xl border border-emerald-700/50 text-xs md:text-sm">
+          <div class="flex items-center gap-2">
+            <span class="text-2xl">🌟</span>
+            <span><b>收集 10 個好行為：</b>獲得友情力量並通關！</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-2xl">⚠️</span>
+            <span><b>避開壞行為：</b>選錯會扣減生命（❤️）！</span>
+          </div>
+        </div>
+        <p class="text-xs md:text-sm text-amber-200">
+          💡 請仔細閱讀每個蘋果下方標籤的文字！
+        </p>
+        <button id="startBtn" class="w-full py-4 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-2xl rounded-2xl shadow-lg transform active:scale-95 transition-all border-b-4 border-amber-700">
+          🚀 開始冒險
+        </button>
+      </div>
+    </div>
 
-            playBadFruit() {
-                if (!this.ctx) return;
-                const now = this.ctx.currentTime;
-                const osc = this.ctx.createOscillator();
-                const gain = this.ctx.createGain();
-                osc.type = 'sawtooth';
-                osc.frequency.setValueAtTime(240, now);
-                osc.frequency.linearRampToValueAtTime(120, now + 0.3);
-                gain.gain.setValueAtTime(0.2, now);
-                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
-                osc.connect(gain);
-                gain.connect(this.ctx.destination);
-                osc.start(now);
-                osc.stop(now + 0.3);
-            }
+    <!-- Game Over / Victory Modal -->
+    <div id="resultModal" class="hidden absolute inset-0 bg-slate-950/90 backdrop-blur-md flex justify-center items-center p-4 z-40 overflow-y-auto">
+      <div class="bg-emerald-900 border-4 border-amber-400 rounded-3xl p-5 md:p-8 max-w-2xl w-full text-center shadow-2xl space-y-4 my-auto">
+        <div id="resultTitle" class="text-3xl md:text-4xl font-black text-amber-300"></div>
+        
+        <div id="starRating" class="text-4xl md:text-5xl my-2">⭐⭐⭐</div>
 
-            playVictory() {
-                if (!this.ctx) return;
-                const now = this.ctx.currentTime;
-                [440, 554.37, 659.25, 880, 1046.50].forEach((freq, i) => {
-                    const osc = this.ctx.createOscillator();
-                    const gain = this.ctx.createGain();
-                    osc.type = 'sine';
-                    osc.frequency.value = freq;
-                    gain.gain.setValueAtTime(0, now + i * 0.12);
-                    gain.gain.linearRampToValueAtTime(0.3, now + i * 0.12 + 0.05);
-                    gain.gain.exponentialRampToValueAtTime(0.001, now + i * 0.12 + 0.4);
-                    osc.connect(gain);
-                    gain.connect(this.ctx.destination);
-                    osc.start(now + i * 0.12);
-                    osc.stop(now + i * 0.12 + 0.4);
-                });
-            }
+        <!-- Score Breakdown Table -->
+        <div class="bg-emerald-950/80 rounded-2xl p-4 text-xs md:text-sm space-y-2 border border-emerald-700">
+          <div class="flex justify-between border-b border-emerald-800/80 pb-1">
+            <span class="text-emerald-300">好行為水果基礎分 (+1000/個):</span>
+            <span id="scoreBase" class="font-bold text-amber-300">+0</span>
+          </div>
+          <div class="flex justify-between border-b border-emerald-800/80 pb-1">
+            <span class="text-emerald-300">時間速度獎勵:</span>
+            <span id="scoreTime" class="font-bold text-cyan-300">+0</span>
+          </div>
+          <div class="flex justify-between border-b border-emerald-800/80 pb-1">
+            <span class="text-emerald-300">剩餘心心獎勵 (+300/❤️):</span>
+            <span id="scoreHearts" class="font-bold text-rose-300">+0</span>
+          </div>
+          <div class="flex justify-between border-b border-emerald-800/80 pb-1">
+            <span class="text-emerald-300">壞行為誤採扣分:</span>
+            <span id="scorePenalty" class="font-bold text-red-400">-0</span>
+          </div>
+          <div class="flex justify-between text-base md:text-lg font-black pt-1">
+            <span class="text-white">最終總分:</span>
+            <span id="scoreFinal" class="text-yellow-400">0</span>
+          </div>
+        </div>
+
+        <!-- Review Values List -->
+        <div class="text-left">
+          <h3 class="text-sm font-bold text-amber-300 mb-2">📋 友誼行為學習總結：</h3>
+          <div id="reviewList" class="max-h-40 overflow-y-auto space-y-2 bg-emerald-950/60 p-3 rounded-xl border border-emerald-800 text-xs"></div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="grid grid-cols-2 gap-3 pt-2">
+          <button id="restartBtn" class="py-3 bg-slate-700 hover:bg-slate-600 text-white font-bold rounded-xl text-base md:text-lg shadow">
+            🔄 重新挑戰
+          </button>
+          <button id="certBtn" class="py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black rounded-xl text-base md:text-lg shadow border-b-4 border-amber-700">
+            📜 領取大使證書
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Certificate Modal -->
+    <div id="certModal" class="hidden absolute inset-0 bg-slate-950/95 flex justify-center items-center p-4 z-50">
+      <div class="bg-amber-50 text-slate-900 border-8 border-amber-500 rounded-2xl p-6 md:p-8 max-w-xl w-full text-center relative shadow-2xl">
+        <button id="closeCertBtn" class="absolute top-2 right-4 text-3xl font-black text-slate-500 hover:text-slate-800">&times;</button>
+        <div class="border-2 border-dashed border-amber-700 p-4 rounded-xl space-y-4">
+          <div class="text-3xl md:text-4xl font-extrabold text-amber-800 tracking-wider">友誼大使證書</div>
+          <p class="text-xs md:text-sm text-slate-600">CERTIFICATE OF FRIENDSHIP AMBASSADOR</p>
+          <div class="py-2">
+            <p class="text-sm text-slate-700">恭喜優秀的學生小冒險家</p>
+            <p class="text-2xl font-black text-emerald-800 my-1">獲頒「友誼大使」榮譽稱號</p>
+          </div>
+          <p class="text-xs md:text-sm text-slate-600 text-left leading-relaxed bg-amber-100/60 p-3 rounded-lg border border-amber-200">
+            在「友誼樹大冒險」中，成功辨識並實踐了 10 項友誼良好價值觀（如互相幫助、誠實、禮貌、分享等），展現了出色的友愛精神！
+          </p>
+          <div class="flex justify-between items-end pt-4 text-xs text-slate-500">
+            <div>發證機關: 友誼樹委員會</div>
+            <div id="certDate">日期: 2026-10-07</div>
+          </div>
+        </div>
+        <button onclick="window.print()" class="mt-4 px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-sm">
+          🖨️ 列印 / 儲存證書
+        </button>
+      </div>
+    </div>
+  </main>
+
+  <footer class="h-28 md:h-36 bg-slate-950/90 border-t-4 border-slate-800 grid grid-cols-3 gap-2 p-2 md:p-3 z-10">
+    <button id="btnLeft" class="touch-btn bg-emerald-700 border-b-4 border-emerald-900 active:border-b-0 rounded-2xl flex justify-center items-center text-2xl md:text-4xl font-black shadow-lg">
+      👈 左
+    </button>
+    <button id="btnRight" class="touch-btn bg-emerald-700 border-b-4 border-emerald-900 active:border-b-0 rounded-2xl flex justify-center items-center text-2xl md:text-4xl font-black shadow-lg">
+      👉 右
+    </button>
+    <button id="btnJump" class="touch-btn bg-amber-500 border-b-4 border-amber-700 active:border-b-0 text-slate-950 rounded-2xl flex justify-center items-center text-2xl md:text-4xl font-black shadow-lg">
+      🦘 跳躍
+    </button>
+  </footer>
+
+  <script>
+    // Audio Synthesizer
+    class SoundEffects {
+      constructor() {
+        this.ctx = null;
+      }
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioContext();
         }
-
-        const sound = new SoundEngine();
-
-        // 10 Good Values
-        const GOOD_VALUES = [
-            { name: '互相幫助', type: 'good', en: 'Help Each Other', desc: '當朋友遇到困難時伸出援手，彼此相助最溫暖！' },
-            { name: '誠實', type: 'good', en: 'Honesty', desc: '勇於說真話不隱瞞，建立彼此最深厚的信任！' },
-            { name: '分享', type: 'good', en: 'Sharing', desc: '把快樂與好東西分享出去，幸福感加倍！' },
-            { name: '禮貌', type: 'good', en: 'Politeness', desc: '常說請、謝謝、對不起，讓人人都想做朋友！' },
-            { name: '關心', type: 'good', en: 'Caring', desc: '細心關懷朋友的情緒與需求，給予溫暖！' },
-            { name: '合作', type: 'good', en: 'Cooperation', desc: '團結齊心協力，一起完成更棒的目標！' },
-            { name: '包容', type: 'good', en: 'Tolerance', desc: '體諒與寬容別人的不同，友情更廣闊！' },
-            { name: '耐心', type: 'good', en: 'Patience', desc: '耐心地聆聽與陪伴，給朋友思考的時間！' },
-            { name: '友善', type: 'good', en: 'Friendliness', desc: '用和藹微笑與友善態度對待每一個人！' },
-            { name: '守信', type: 'good', en: 'Trustworthiness', desc: '答應朋友的事認真做到，講信用最可靠！' }
-        ];
-
-        // 10 Bad Values
-        const BAD_VALUES = [
-            { name: '欺凌', type: 'bad', en: 'Bullying', desc: '動手或言語傷害他人會造成深遠傷害，絕對不可以！' },
-            { name: '自私', type: 'bad', en: 'Selfishness', desc: '只顧自己不考慮別人，會讓朋友離你越來越遠。' },
-            { name: '撒謊', type: 'bad', en: 'Lying', desc: '用謊言欺騙別人會破壞信任，讓人不敢相信你。' },
-            { name: '搶奪', type: 'bad', en: 'Snatching', desc: '不經同意強行搶走別人的東西是非常不禮貌的！' },
-            { name: '罵人', type: 'bad', en: 'Swearing', desc: '用粗魯壞話罵人會嚴重傷人自尊與感情。' },
-            { name: '嘲笑', type: 'bad', en: 'Teasing', desc: '拿別人的缺點或失敗開玩笑會讓人心痛。' },
-            { name: '推撞', type: 'bad', en: 'Shoving', desc: '肢體推撞非常危險，容易造成受傷。' },
-            { name: '貪心', type: 'bad', en: 'Greed', desc: '貪得無厭搶佔所有資源，會失去朋友。' },
-            { name: '嫉妒', type: 'bad', en: 'Jealousy', desc: '眼紅朋友的成就，不如誠心為對方加油祝賀！' },
-            { name: '懶惰', type: 'bad', en: 'Laziness', desc: '分工合作時推卸責任不出力，會損害團隊夥伴關係。' }
-        ];
-
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-
-        // Viewport and Vertical World Dimensions
-        let viewWidth = 1200;
-        let viewHeight = 800;
-        const worldWidth = 1200;
-        const worldHeight = 2400; // Canopy climbing height
-
-        const camera = { x: 0, y: worldHeight - viewHeight };
-
-        function resizeCanvas() {
-            const container = canvas.parentElement;
-            canvas.width = container.clientWidth;
-            canvas.height = container.clientHeight;
-            viewWidth = canvas.width;
-            viewHeight = canvas.height;
+        if (this.ctx.state === 'suspended') {
+          this.ctx.resume();
         }
-        window.addEventListener('resize', resizeCanvas);
-        resizeCanvas();
-
-        let score = 0;
-        let lives = 3;
-        let goodFruitsCollected = 0; // Target: 10
-        let badFruitsCollected = 0;
-        let isGameOver = false;
-
-        // Timer Variables
-        let startTime = 0;
-        let elapsedTimeInSeconds = 0;
-        let timerInterval = null;
-
-        const keys = { left: false, right: false, jump: false, jumpPressed: false };
-
-        const player = {
-            x: worldWidth / 2 - 22,
-            y: worldHeight - 120, // Ground level start at bottom
-            width: 44,
-            height: 48,
-            vx: 0,
-            vy: 0,
-            speed: 8,
-            jumpStrength: -14.5,
-            gravity: 0.58,
-            isGrounded: false,
-            jumpsLeft: 2, // Double jump
-            facingRight: true
-        };
-
-        let platforms = [];
-        let fruits = [];
-        let particles = [];
-        let clouds = [];
-
-        function initClouds() {
-            clouds = [];
-            for (let i = 0; i < 20; i++) {
-                clouds.push({
-                    x: Math.random() * worldWidth,
-                    y: Math.random() * (worldHeight - 200),
-                    radius: 30 + Math.random() * 25,
-                    speed: 0.2 + Math.random() * 0.3
-                });
-            }
-        }
-
-        function generateLevel() {
-            platforms = [];
-            fruits = [];
-
-            // 1. Ground platform
-            platforms.push({ x: 0, y: worldHeight - 50, w: worldWidth, h: 50, isGround: true });
-
-            // 2. Asymmetric & Organic Branches
-            const organicBranchConfigs = [
-                { x: 180, y: 2220, w: 190, thickness: 22, angle: -0.06 },
-                { x: 780, y: 2200, w: 220, thickness: 24, angle: 0.08 },
-                { x: 90, y: 2020, w: 240, thickness: 22, angle: -0.09 },
-                { x: 480, y: 2060, w: 180, thickness: 20, angle: 0.05 },
-                { x: 820, y: 1980, w: 260, thickness: 24, angle: 0.07 },
-                { x: 260, y: 1840, w: 220, thickness: 20, angle: 0.06 },
-                { x: 620, y: 1810, w: 280, thickness: 22, angle: -0.08 },
-                { x: 80, y: 1680, w: 230, thickness: 22, angle: -0.07 },
-                { x: 460, y: 1640, w: 250, thickness: 20, angle: 0.04 },
-                { x: 890, y: 1660, w: 210, thickness: 22, angle: 0.09 },
-                { x: 220, y: 1470, w: 260, thickness: 22, angle: 0.08 },
-                { x: 710, y: 1450, w: 240, thickness: 20, angle: -0.06 },
-                { x: 110, y: 1280, w: 200, thickness: 20, angle: -0.08 },
-                { x: 420, y: 1250, w: 280, thickness: 22, angle: 0.05 },
-                { x: 850, y: 1270, w: 220, thickness: 20, angle: -0.07 },
-                { x: 280, y: 1080, w: 230, thickness: 20, angle: 0.06 },
-                { x: 670, y: 1060, w: 250, thickness: 22, angle: -0.08 },
-                { x: 140, y: 890, w: 250, thickness: 22, angle: -0.07 },
-                { x: 500, y: 860, w: 210, thickness: 20, angle: 0.05 },
-                { x: 810, y: 880, w: 240, thickness: 20, angle: 0.08 },
-                { x: 250, y: 690, w: 230, thickness: 20, angle: -0.05 },
-                { x: 620, y: 670, w: 270, thickness: 22, angle: 0.06 },
-                { x: 400, y: 490, w: 320, thickness: 24, angle: 0.02 }
-            ];
-
-            organicBranchConfigs.forEach(b => {
-                platforms.push({
-                    x: b.x,
-                    y: b.y,
-                    w: b.w,
-                    thickness: b.thickness,
-                    angle: b.angle
-                });
-            });
-
-            // 20 Uneven fruit coordinates scattered organically
-            const fruitLocations = [
-                { x: 210, y: 2160 },
-                { x: 920, y: 2130 },
-                { x: 140, y: 1960 },
-                { x: 980, y: 1920 },
-                { x: 340, y: 1780 },
-                { x: 720, y: 1740 },
-                { x: 130, y: 1610 },
-                { x: 540, y: 1570 },
-                { x: 990, y: 1590 },
-                { x: 310, y: 1400 },
-                { x: 800, y: 1380 },
-                { x: 180, y: 1210 },
-                { x: 580, y: 1180 },
-                { x: 940, y: 1200 },
-                { x: 360, y: 1010 },
-                { x: 780, y: 990 },
-                { x: 210, y: 820 },
-                { x: 890, y: 810 },
-                { x: 310, y: 620 },
-                { x: 560, y: 420 }
-            ];
-
-            const combinedValues = [...GOOD_VALUES, ...BAD_VALUES].sort(() => Math.random() - 0.5);
-
-            fruitLocations.forEach((loc, idx) => {
-                fruits.push({
-                    x: loc.x,
-                    y: loc.y,
-                    radius: 22,
-                    data: combinedValues[idx],
-                    collected: false,
-                    floatOffset: Math.random() * Math.PI * 2
-                });
-            });
-        }
-
-        function createBurst(x, y, color, count = 16) {
-            for (let i = 0; i < count; i++) {
-                const angle = Math.random() * Math.PI * 2;
-                const speed = 1.5 + Math.random() * 4.5;
-                particles.push({
-                    x: x,
-                    y: y,
-                    vx: Math.cos(angle) * speed,
-                    vy: Math.sin(angle) * speed,
-                    radius: 3 + Math.random() * 4,
-                    color: color,
-                    alpha: 1,
-                    decay: 0.02 + Math.random() * 0.02
-                });
-            }
-        }
-
-        function bindControls() {
-            const triggerJump = () => {
-                if (player.jumpsLeft > 0) {
-                    player.vy = player.jumpStrength;
-                    player.jumpsLeft--;
-                    player.isGrounded = false;
-                    sound.playJump();
-                }
-            };
-
-            window.addEventListener('keydown', (e) => {
-                if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.left = true;
-                if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.right = true;
-                if (e.code === 'ArrowUp' || e.code === 'KeyW' || e.code === 'Space') {
-                    if (!keys.jumpPressed) {
-                        triggerJump();
-                        keys.jumpPressed = true;
-                    }
-                }
-            });
-
-            window.addEventListener('keyup', (e) => {
-                if (e.code === 'ArrowLeft' || e.code === 'KeyA') keys.left = false;
-                if (e.code === 'ArrowRight' || e.code === 'KeyD') keys.right = false;
-                if (e.code === 'ArrowUp' || e.code === 'KeyW' || e.code === 'Space') {
-                    keys.jumpPressed = false;
-                }
-            });
-
-            const btnLeft = document.getElementById('btnLeft');
-            const btnRight = document.getElementById('btnRight');
-            const btnJump = document.getElementById('btnJump');
-
-            const bindTouch = (elem, onPress, onRelease) => {
-                elem.addEventListener('touchstart', (e) => { e.preventDefault(); onPress(); });
-                elem.addEventListener('touchend', (e) => { e.preventDefault(); onRelease(); });
-                elem.addEventListener('mousedown', onPress);
-                elem.addEventListener('mouseup', onRelease);
-            };
-
-            bindTouch(btnLeft, () => keys.left = true, () => keys.left = false);
-            bindTouch(btnRight, () => keys.right = true, () => keys.right = false);
-            bindTouch(btnJump, () => triggerJump(), () => {});
-        }
-
-        function startTimer() {
-            if (timerInterval) clearInterval(timerInterval);
-            startTime = Date.now();
-            elapsedTimeInSeconds = 0;
-            updateTimerDisplay();
-
-            timerInterval = setInterval(() => {
-                if (!isGameOver) {
-                    elapsedTimeInSeconds = Math.floor((Date.now() - startTime) / 1000);
-                    updateTimerDisplay();
-                }
-            }, 1000);
-        }
-
-        function stopTimer() {
-            if (timerInterval) clearInterval(timerInterval);
-        }
-
-        function updateTimerDisplay() {
-            const mins = Math.floor(elapsedTimeInSeconds / 60).toString().padStart(2, '0');
-            const secs = (elapsedTimeInSeconds % 60).toString().padStart(2, '0');
-            document.getElementById('timerDisplay').textContent = `${mins}:${secs}`;
-        }
-
-        let bannerTimeout = null;
-        function showEduBanner(valueData) {
-            const banner = document.getElementById('eduBanner');
-            const box = document.getElementById('bannerBox');
-            const icon = document.getElementById('bannerIcon');
-            const title = document.getElementById('bannerTitle');
-            const desc = document.getElementById('bannerDesc');
-
-            if (valueData.type === 'good') {
-                box.className = "bg-emerald-50 p-4 rounded-2xl border-4 border-emerald-400 shadow-2xl flex items-center gap-3 animate-bounce";
-                icon.textContent = "🌟";
-                title.className = "text-xl font-black text-emerald-800";
-                title.textContent = `正向品質：${valueData.name} (${valueData.en})`;
-                desc.textContent = valueData.desc;
-            } else {
-                box.className = "bg-rose-50 p-4 rounded-2xl border-4 border-rose-400 shadow-2xl flex items-center gap-3";
-                icon.textContent = "⚠️";
-                title.className = "text-xl font-black text-rose-800";
-                title.textContent = `注意避開：${valueData.name} (${valueData.en})`;
-                desc.textContent = valueData.desc;
-            }
-
-            banner.classList.remove('-translate-y-20', 'opacity-0');
-            banner.classList.add('translate-y-0', 'opacity-100');
-
-            if (bannerTimeout) clearTimeout(bannerTimeout);
-            bannerTimeout = setTimeout(() => {
-                banner.classList.remove('translate-y-0', 'opacity-100');
-                banner.classList.add('-translate-y-20', 'opacity-0');
-            }, 3200);
-        }
-
-        function update() {
-            if (isGameOver) return;
-
-            // Horizontal Movement
-            if (keys.left) {
-                player.vx = -player.speed;
-                player.facingRight = false;
-            } else if (keys.right) {
-                player.vx = player.speed;
-                player.facingRight = true;
-            } else {
-                player.vx *= 0.75;
-            }
-
-            player.x += player.vx;
-            if (player.x < 10) player.x = 10;
-            if (player.x + player.width > worldWidth - 10) player.x = worldWidth - player.width - 10;
-
-            // Physics & Jump
-            player.vy += player.gravity;
-            player.y += player.vy;
-
-            player.isGrounded = false;
-            platforms.forEach(p => {
-                if (
-                    player.x + player.width > p.x &&
-                    player.x < p.x + p.w &&
-                    player.y + player.height >= p.y &&
-                    player.y + player.height <= p.y + (p.h || 18) + player.vy &&
-                    player.vy >= 0
-                ) {
-                    player.y = p.y - player.height;
-                    player.vy = 0;
-                    player.isGrounded = true;
-                    player.jumpsLeft = 2;
-                }
-            });
-
-            // Smooth Vertical Camera Tracking
-            const targetCamY = player.y - viewHeight * 0.55;
-            camera.y += (targetCamY - camera.y) * 0.1;
-            if (camera.y < 0) camera.y = 0;
-            if (camera.y > worldHeight - viewHeight) camera.y = worldHeight - viewHeight;
-
-            // Fruit Collisions
-            const px = player.x + player.width / 2;
-            const py = player.y + player.height / 2;
-
-            fruits.forEach(f => {
-                if (!f.collected) {
-                    const dist = Math.hypot(px - f.x, py - f.y);
-                    if (dist < f.radius + player.width / 2) {
-                        f.collected = true;
-
-                        if (f.data.type === 'good') {
-                            goodFruitsCollected++;
-                            score += 100;
-                            document.getElementById('goodCounter').textContent = `${goodFruitsCollected} / 10`;
-                            document.getElementById('scoreDisplay').textContent = score;
-                            sound.playGoodFruit();
-                            createBurst(f.x, f.y, '#34d399', 20);
-                            showEduBanner(f.data);
-
-                            // GAME FINISHES IMMEDIATELY WHEN ALL 10 GOOD FRUITS ARE GATHERED
-                            if (goodFruitsCollected >= 10) {
-                                setTimeout(() => endGame(true), 400);
-                            }
-                        } else {
-                            badFruitsCollected++;
-                            score = Math.max(0, score - 50);
-                            lives--;
-                            document.getElementById('badCounter').textContent = badFruitsCollected;
-                            document.getElementById('scoreDisplay').textContent = score;
-                            updateLivesDisplay();
-                            sound.playBadFruit();
-                            createBurst(f.x, f.y, '#f87171', 20);
-                            showEduBanner(f.data);
-
-                            if (lives <= 0) {
-                                setTimeout(() => endGame(false), 400);
-                            }
-                        }
-                    }
-                }
-            });
-
-            // Particles Decay
-            particles.forEach((pt, idx) => {
-                pt.x += pt.vx;
-                pt.y += pt.vy;
-                pt.alpha -= pt.decay;
-                if (pt.alpha <= 0) particles.splice(idx, 1);
-            });
-
-            // Cloud Motion
-            clouds.forEach(c => {
-                c.x += c.speed;
-                if (c.x - c.radius > worldWidth) c.x = -c.radius;
-            });
-        }
-
-        function updateLivesDisplay() {
-            const container = document.getElementById('livesContainer');
-            let hearts = '';
-            for (let i = 0; i < 3; i++) {
-                hearts += i < lives ? '❤️ ' : '🖤 ';
-            }
-            container.textContent = hearts;
-        }
-
-        function draw() {
-            ctx.clearRect(0, 0, viewWidth, viewHeight);
-
-            ctx.save();
-            const scaleX = viewWidth / worldWidth;
-            ctx.scale(scaleX, 1);
-            ctx.translate(0, -camera.y);
-
-            // 1. Sky & Background Clouds
-            clouds.forEach(c => {
-                ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
-                ctx.beginPath();
-                ctx.arc(c.x, c.y, c.radius, 0, Math.PI * 2);
-                ctx.arc(c.x + c.radius * 0.6, c.y - c.radius * 0.2, c.radius * 0.7, 0, Math.PI * 2);
-                ctx.arc(c.x - c.radius * 0.6, c.y - c.radius * 0.2, c.radius * 0.7, 0, Math.PI * 2);
-                ctx.fill();
-            });
-
-            // 2. Organic Winding Main Tree Trunk
-            ctx.fillStyle = '#78350f';
-            ctx.beginPath();
-            ctx.moveTo(worldWidth * 0.42, worldHeight - 50);
-            ctx.bezierCurveTo(worldWidth * 0.40, worldHeight - 600, worldWidth * 0.58, worldHeight - 1200, worldWidth * 0.45, worldHeight - 1800);
-            ctx.bezierCurveTo(worldWidth * 0.38, worldHeight - 2000, worldWidth * 0.52, worldHeight - 2250, worldWidth * 0.48, 100);
-            ctx.lineTo(worldWidth * 0.56, 100);
-            ctx.bezierCurveTo(worldWidth * 0.60, worldHeight - 2250, worldWidth * 0.48, worldHeight - 2000, worldWidth * 0.55, worldHeight - 1800);
-            ctx.bezierCurveTo(worldWidth * 0.68, worldHeight - 1200, worldWidth * 0.50, worldHeight - 600, worldWidth * 0.58, worldHeight - 50);
-            ctx.closePath();
-            ctx.fill();
-
-            // 3. Platforms & Foliage
-            platforms.forEach(p => {
-                if (p.isGround) {
-                    ctx.fillStyle = '#22c55e';
-                    ctx.fillRect(p.x, p.y, p.w, p.h);
-                    ctx.fillStyle = '#16a34a';
-                    ctx.fillRect(p.x, p.y, p.w, 10);
-                } else {
-                    ctx.save();
-                    ctx.translate(p.x + p.w / 2, p.y + 10);
-                    if (p.angle) ctx.rotate(p.angle);
-
-                    // Wooden Branch
-                    ctx.fillStyle = '#854d0e';
-                    ctx.beginPath();
-                    ctx.roundRect(-p.w / 2, -9, p.w, p.thickness || 18, 10);
-                    ctx.fill();
-
-                    // Foliage Leaves
-                    ctx.fillStyle = '#4ade80';
-                    ctx.beginPath();
-                    ctx.arc(-p.w / 2 - 2, 0, 14, 0, Math.PI * 2);
-                    ctx.arc(p.w / 2 + 2, 0, 14, 0, Math.PI * 2);
-                    ctx.arc(0, -6, 10, 0, Math.PI * 2);
-                    ctx.fill();
-
-                    ctx.restore();
-                }
-            });
-
-            // 4. Glossy Red Fruits with Label Tags
-            const time = Date.now() * 0.003;
-            fruits.forEach(f => {
-                if (!f.collected) {
-                    const floatY = f.y + Math.sin(time + f.floatOffset) * 5;
-
-                    // Shiny Red Apple Body
-                    const gradient = ctx.createRadialGradient(
-                        f.x - 6, floatY - 6, 2,
-                        f.x, floatY, f.radius
-                    );
-                    gradient.addColorStop(0, '#ff8585');
-                    gradient.addColorStop(0.3, '#dc2626');
-                    gradient.addColorStop(1, '#991b1b');
-
-                    ctx.beginPath();
-                    ctx.arc(f.x, floatY, f.radius, 0, Math.PI * 2);
-                    ctx.fillStyle = gradient;
-                    ctx.fill();
-                    ctx.lineWidth = 2.5;
-                    ctx.strokeStyle = '#fca5a5';
-                    ctx.stroke();
-
-                    // Highlight
-                    ctx.beginPath();
-                    ctx.arc(f.x - 7, floatY - 7, 5, 0, Math.PI * 2);
-                    ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
-                    ctx.fill();
-
-                    // Stem and Leaf
-                    ctx.strokeStyle = '#15803d';
-                    ctx.lineWidth = 3;
-                    ctx.beginPath();
-                    ctx.moveTo(f.x, floatY - f.radius);
-                    ctx.quadraticCurveTo(f.x + 4, floatY - f.radius - 8, f.x + 6, floatY - f.radius - 6);
-                    ctx.stroke();
-
-                    ctx.fillStyle = '#22c55e';
-                    ctx.beginPath();
-                    ctx.ellipse(f.x + 8, floatY - f.radius - 5, 7, 4, Math.PI / 4, 0, Math.PI * 2);
-                    ctx.fill();
-
-                    // Text Label Tag
-                    ctx.font = 'bold 14px "Noto Sans TC", sans-serif';
-                    const textWidth = ctx.measureText(f.data.name).width || 60;
-                    
-                    ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
-                    ctx.strokeStyle = '#f59e0b';
-                    ctx.lineWidth = 2;
-                    ctx.beginPath();
-                    ctx.roundRect(f.x - textWidth / 2 - 8, floatY + f.radius + 4, textWidth + 16, 24, 6);
-                    ctx.fill();
-                    ctx.stroke();
-
-                    ctx.fillStyle = '#1e293b';
-                    ctx.textAlign = 'center';
-                    ctx.fillText(f.data.name, f.x, floatY + f.radius + 21);
-                }
-            });
-
-            // 5. Squirrel Player
-            ctx.save();
-            ctx.translate(player.x + player.width / 2, player.y + player.height / 2);
-            if (!player.facingRight) ctx.scale(-1, 1);
-
-            // Tail
-            ctx.fillStyle = '#d97706';
-            ctx.beginPath();
-            ctx.ellipse(-16, -5, 14, 22, Math.PI / 4, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Body
-            ctx.fillStyle = '#f59e0b';
-            ctx.beginPath();
-            ctx.ellipse(0, 4, 16, 18, 0, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Head
-            ctx.beginPath();
-            ctx.arc(4, -12, 14, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Ears
-            ctx.fillStyle = '#b45309';
-            ctx.beginPath();
-            ctx.arc(8, -24, 5, 0, Math.PI * 2);
-            ctx.arc(-2, -24, 5, 0, Math.PI * 2);
-            ctx.fill();
-
-            // Eye & Nose
-            ctx.fillStyle = '#000';
-            ctx.beginPath();
-            ctx.arc(8, -14, 2.5, 0, Math.PI * 2);
-            ctx.fill();
-
-            ctx.fillStyle = '#fff';
-            ctx.beginPath();
-            ctx.arc(12, -10, 6, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.fillStyle = '#78350f';
-            ctx.beginPath();
-            ctx.arc(15, -12, 2, 0, Math.PI * 2);
-            ctx.fill();
-
-            ctx.restore();
-
-            // 6. Burst Particles
-            particles.forEach(pt => {
-                ctx.save();
-                ctx.globalAlpha = pt.alpha;
-                ctx.fillStyle = pt.color;
-                ctx.beginPath();
-                ctx.arc(pt.x, pt.y, pt.radius, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.restore();
-            });
-
-            ctx.restore();
-
-            requestAnimationFrame(() => {
-                update();
-                draw();
-            });
-        }
-
-        function endGame(isVictory = true) {
-            isGameOver = true;
-            stopTimer();
-
-            if (isVictory) sound.playVictory();
-
-            // 1. Calculate Score Items
-            const goodBaseScore = goodFruitsCollected * 100;
-            const badDeductionScore = badFruitsCollected * 50;
-
-            // Speed / Time Bonus: Starts at 2000 pts, decreases by 10 pts per second (min floor 100)
-            let timeBonus = 0;
-            if (isVictory) {
-                timeBonus = Math.max(100, 2000 - (elapsedTimeInSeconds * 10));
-            }
-
-            const heartBonus = lives * 100;
-            const finalCalculatedScore = Math.max(0, goodBaseScore - badDeductionScore + timeBonus + heartBonus);
-
-            // Update Breakdown UI
-            document.getElementById('bdGoodScore').textContent = `+${goodBaseScore}`;
-            document.getElementById('bdBadDeduct').textContent = `-${badDeductionScore}`;
-            document.getElementById('bdTimeBonus').textContent = `+${timeBonus}`;
-            document.getElementById('bdHeartBonus').textContent = `+${heartBonus}`;
-
-            const mins = Math.floor(elapsedTimeInSeconds / 60).toString().padStart(2, '0');
-            const secs = (elapsedTimeInSeconds % 60).toString().padStart(2, '0');
-            document.getElementById('bdTotalTime').textContent = `${mins}:${secs}`;
-
-            const modal = document.getElementById('scoreboardModal');
-            modal.classList.remove('hidden');
-
-            const starsContainer = document.getElementById('finalStars');
-            const endTitle = document.getElementById('endTitle');
-            const finalRankDesc = document.getElementById('finalRankDesc');
-
-            if (isVictory) {
-                endTitle.textContent = "🎉 恭喜！友情大圓滿！ 🎉";
-                if (finalCalculatedScore >= 2600) {
-                    starsContainer.textContent = "⭐ ⭐ ⭐";
-                    finalRankDesc.textContent = `神速與品德完美兼備！你僅用了 ${elapsedTimeInSeconds} 秒完成，獲得超高速度加分，展現了完美的友誼金牌品德！`;
-                } else if (finalCalculatedScore >= 1800) {
-                    starsContainer.textContent = "⭐ ⭐ ⚪";
-                    finalRankDesc.textContent = `太棒了！你順利辨識紅果實上的文字，以 ${elapsedTimeInSeconds} 秒迅速採集全部 10 個良好品質！`;
-                } else {
-                    starsContainer.textContent = "⭐ ⚪ ⚪";
-                    finalRankDesc.textContent = "好棒！成功採集全部正向品質！下次嘗試跑得更快，挑戰更高時間加分喔！";
-                }
-            } else {
-                endTitle.textContent = "💪 再接再厲！ 💪";
-                starsContainer.textContent = "⭐ ⚪ ⚪";
-                finalRankDesc.textContent = "愛心用完了！沒關係，多注意讀清楚果實上的文字標籤，再試一次吧！";
-            }
-
-            document.getElementById('finalScoreText').textContent = `總得分: ${finalCalculatedScore} 分`;
-
-            // Render Recap Lists
-            const goodList = document.getElementById('goodValuesList');
-            const badList = document.getElementById('badValuesList');
-            goodList.innerHTML = '';
-            badList.innerHTML = '';
-
-            const allValues = [...GOOD_VALUES, ...BAD_VALUES];
-            allValues.forEach(v => {
-                const isCollected = fruits.some(f => f.data.name === v.name && f.collected);
-                const item = document.createElement('div');
-                item.className = "p-2 bg-white rounded-lg border flex items-start gap-2 shadow-sm";
-
-                if (v.type === 'good') {
-                    item.innerHTML = `
-                        <span class="text-base">${isCollected ? '✅' : '⚪'}</span>
-                        <div>
-                            <p class="font-black ${isCollected ? 'text-emerald-800' : 'text-slate-400'}">${v.name} <span class="text-xs text-slate-400">(${v.en})</span></p>
-                            <p class="text-xs text-slate-600">${v.desc}</p>
-                        </div>
-                    `;
-                    goodList.appendChild(item);
-                } else {
-                    item.innerHTML = `
-                        <span class="text-base">${isCollected ? '⚠️️' : '🛡️'}</span>
-                        <div>
-                            <p class="font-black ${isCollected ? 'text-rose-800 font-bold' : 'text-slate-400'}">${v.name} <span class="text-xs text-slate-400">(${v.en})</span></p>
-                            <p class="text-xs text-slate-600">${v.desc}</p>
-                        </div>
-                    `;
-                    badList.appendChild(item);
-                }
-            });
-        }
-
-        function startGame() {
-            sound.init();
-            score = 0;
-            lives = 3;
-            goodFruitsCollected = 0;
-            badFruitsCollected = 0;
-            isGameOver = false;
-
-            player.x = worldWidth / 2 - 22;
-            player.y = worldHeight - 120;
-            player.vx = 0;
-            player.vy = 0;
-
-            document.getElementById('scoreDisplay').textContent = '0';
-            document.getElementById('goodCounter').textContent = '0 / 10';
-            document.getElementById('badCounter').textContent = '0';
-            updateLivesDisplay();
-
-            document.getElementById('startScreen').classList.add('hidden');
-            document.getElementById('scoreboardModal').classList.add('hidden');
-
-            generateLevel();
-            initClouds();
-            startTimer();
-        }
-
-        document.getElementById('btnStart').addEventListener('click', startGame);
-        document.getElementById('btnRestart').addEventListener('click', startGame);
-
-        // Certificate Modals
-        const certModal = document.getElementById('certModal');
-        document.getElementById('btnCertificate').addEventListener('click', () => {
-            const dateStr = new Date().toISOString().split('T')[0];
-            document.getElementById('certDate').textContent = `日期：${dateStr}`;
-            certModal.classList.remove('hidden');
+      }
+      playJump() {
+        if (!this.ctx) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(150, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(400, this.ctx.currentTime + 0.15);
+        gain.gain.setValueAtTime(0.3, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.15);
+      }
+      playGood() {
+        if (!this.ctx) return;
+        const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+        notes.forEach((freq, idx) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, this.ctx.currentTime + idx * 0.06);
+          gain.gain.setValueAtTime(0.2, this.ctx.currentTime + idx * 0.06);
+          gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + idx * 0.06 + 0.15);
+          osc.start(this.ctx.currentTime + idx * 0.06);
+          osc.stop(this.ctx.currentTime + idx * 0.06 + 0.15);
         });
-
-        document.getElementById('btnCloseCert').addEventListener('click', () => {
-            certModal.classList.add('hidden');
+      }
+      playBad() {
+        if (!this.ctx) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(180, this.ctx.currentTime);
+        osc.frequency.linearRampToValueAtTime(110, this.ctx.currentTime + 0.3);
+        gain.gain.setValueAtTime(0.4, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.3);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.3);
+      }
+      playVictory() {
+        if (!this.ctx) return;
+        const melody = [440, 554.37, 659.25, 880];
+        melody.forEach((freq, idx) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.type = 'square';
+          osc.frequency.setValueAtTime(freq, this.ctx.currentTime + idx * 0.12);
+          gain.gain.setValueAtTime(0.2, this.ctx.currentTime + idx * 0.12);
+          gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + idx * 0.12 + 0.25);
+          osc.start(this.ctx.currentTime + idx * 0.12);
+          osc.stop(this.ctx.currentTime + idx * 0.12 + 0.25);
         });
+      }
+    }
 
-        document.getElementById('btnPrintCert').addEventListener('click', () => {
-            window.print();
+    const sfx = new SoundEffects();
+
+    const GOOD_VALUES = [
+      { name: "互相幫助", desc: "在同伴遇到困難時主動伸出援手。" },
+      { name: "誠實", desc: "堅守講真話，不隱瞞謊報事實。" },
+      { name: "分享", desc: "樂意將好的事物與朋友一同享受。" },
+      { name: "禮貌", desc: "對待他人待人有禮、尊重常說請與謝謝。" },
+      { name: "關懷", desc: "關心朋友的身心感受與情緒狀況。" },
+      { name: "體諒", desc: "站在他人角度思考，寬容體諒失誤。" },
+      { name: "守信", desc: "遵守約定，做一個值得信賴的人。" },
+      { name: "合作", desc: "團隊協同努力，分工合作完成目標。" },
+      { name: "友善", desc: "態度親切和藹，熱情接納新朋友。" },
+      { name: "傾聽", desc: "專心聽取別人的想法與表達。" }
+    ];
+
+    const BAD_BEHAVIORS = [
+      { name: "欺凌", desc: "以強凌弱或言語行為侵害同學。" },
+      { name: "自私", desc: "只顧自己利益，完全無視他人感受。" },
+      { name: "撒謊", desc: "說謊騙人，破壞人與人之間的信任。" },
+      { name: "粗言穢語", desc: "使用不禮貌或帶攻擊性的語言。" },
+      { name: "嫉妒", desc: "因他人表現優秀而生嫉恨心態。" },
+      { name: "嘲笑", desc: "針對他人的缺點或失誤進行取笑。" },
+      { name: "取笑", desc: "刻意戲弄他人使其尷尬難堪。" },
+      { name: "霸道", desc: "強求他人服從自己，不講道理。" },
+      { name: "背叛", desc: "出賣朋友信任或透露秘密。" },
+      { name: "推卸責任", desc: "犯錯後歸咎他人而不願承擔。" }
+    ];
+
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+
+    let cameraY = 0;
+    let worldHeight = 3600;
+    let worldWidth = 800;
+
+    let gameActive = false;
+    let startTime = 0;
+    let elapsedTime = 0;
+    let timerInterval = null;
+
+    let lives = 3;
+    let collectedGoodCount = 0;
+    let badCollectedCount = 0;
+
+    // Controls state
+    const keys = { left: false, right: false };
+
+    // Player Object
+    const player = {
+      x: 380,
+      y: 3450,
+      width: 44,
+      height: 44,
+      vx: 0,
+      vy: 0,
+      speed: 7,
+      jumpForce: -13.5,
+      gravity: 0.5,
+      grounded: false,
+      jumpsLeft: 2,
+      facing: 'right'
+    };
+
+    let branches = [];
+    let fruits = [];
+    let particles = [];
+
+    function buildTreeWorld() {
+      branches = [];
+      fruits = [];
+
+      // Ground floor branch
+      branches.push({ x: 0, y: 3520, width: worldWidth, height: 80, isGround: true });
+
+      const levels = 22;
+      const spacing = 140;
+      let startY = 3380;
+
+      for (let i = 0; i < levels; i++) {
+        let y = startY - i * spacing;
+        let bWidth = 180 + Math.random() * 140;
+        let bX = 80 + Math.random() * (worldWidth - 160 - bWidth);
+
+        // Stagger left/right for alternating balance
+        if (i % 2 === 0) {
+          bX = 50 + Math.random() * 260;
+        } else {
+          bX = 380 + Math.random() * 260;
+        }
+
+        branches.push({
+          x: bX,
+          y: y,
+          width: bWidth,
+          height: 24,
+          isGround: false
         });
+      }
 
-        // Initialize engine & start main loop
-        bindControls();
-        generateLevel();
-        initClouds();
-        requestAnimationFrame(draw);
-    </script>
+      // Collectible Fruit Setup: 10 Good + 10 Bad = 20 Fruits
+      const allValues = [
+        ...GOOD_VALUES.map(v => ({ ...v, isGood: true })),
+        ...BAD_BEHAVIORS.map(v => ({ ...v, isGood: false }))
+      ];
+
+      // Shuffle array
+      for (let i = allValues.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [allValues[i], allValues[j]] = [allValues[j], allValues[i]];
+      }
+
+      // Distribute evenly onto branches (excluding ground)
+      const validBranches = branches.slice(1);
+      for (let i = 0; i < 20; i++) {
+        const branch = validBranches[i % validBranches.length];
+        const fruitX = branch.x + 30 + Math.random() * (branch.width - 60);
+        const fruitY = branch.y - 35;
+
+        fruits.push({
+          x: fruitX,
+          y: fruitY,
+          radius: 18,
+          data: allValues[i],
+          collected: false,
+          pulse: Math.random() * Math.PI * 2
+        });
+      }
+    }
+
+    // Leaf background particles
+    function initParticles() {
+      particles = [];
+      for (let i = 0; i < 40; i++) {
+        particles.push({
+          x: Math.random() * worldWidth,
+          y: Math.random() * worldHeight,
+          size: 4 + Math.random() * 6,
+          speedX: -0.5 + Math.random() * 1,
+          speedY: 0.2 + Math.random() * 0.8,
+          rotation: Math.random() * Math.PI
+        });
+      }
+    }
+
+    function bindiPadControls() {
+      const btnLeft = document.getElementById('btnLeft');
+      const btnRight = document.getElementById('btnRight');
+      const btnJump = document.getElementById('btnJump');
+
+      const handleStartLeft = (e) => { e.preventDefault(); keys.left = true; sfx.init(); };
+      const handleEndLeft = (e) => { e.preventDefault(); keys.left = false; };
+      
+      const handleStartRight = (e) => { e.preventDefault(); keys.right = true; sfx.init(); };
+      const handleEndRight = (e) => { e.preventDefault(); keys.right = false; };
+
+      const handleJump = (e) => {
+        e.preventDefault();
+        sfx.init();
+        doJump();
+      };
+
+      btnLeft.addEventListener('touchstart', handleStartLeft, { passive: false });
+      btnLeft.addEventListener('touchend', handleEndLeft, { passive: false });
+      btnLeft.addEventListener('mousedown', handleStartLeft);
+      btnLeft.addEventListener('mouseup', handleEndLeft);
+
+      btnRight.addEventListener('touchstart', handleStartRight, { passive: false });
+      btnRight.addEventListener('touchend', handleEndRight, { passive: false });
+      btnRight.addEventListener('mousedown', handleStartRight);
+      btnRight.addEventListener('mouseup', handleEndRight);
+
+      btnJump.addEventListener('touchstart', handleJump, { passive: false });
+      btnJump.addEventListener('mousedown', handleJump);
+    }
+
+    function doJump() {
+      if (!gameActive) return;
+      if (player.jumpsLeft > 0) {
+        player.vy = player.jumpForce;
+        player.jumpsLeft--;
+        player.grounded = false;
+        sfx.playJump();
+      }
+    }
+
+    function update() {
+      if (!gameActive) return;
+
+      // Horizontal physics
+      if (keys.left) {
+        player.vx = -player.speed;
+        player.facing = 'left';
+      } else if (keys.right) {
+        player.vx = player.speed;
+        player.facing = 'right';
+      } else {
+        player.vx *= 0.7; // friction
+      }
+
+      player.x += player.vx;
+
+      // Screen boundary collision
+      if (player.x < 10) player.x = 10;
+      if (player.x + player.width > worldWidth - 10) player.x = worldWidth - 10 - player.width;
+
+      // Gravity & Vertical physics
+      player.vy += player.gravity;
+      player.y += player.vy;
+
+      // Platform collisions
+      player.grounded = false;
+      branches.forEach(b => {
+        if (
+          player.x + player.width > b.x &&
+          player.x < b.x + b.width &&
+          player.y + player.height >= b.y &&
+          player.y + player.height <= b.y + b.height + 12 &&
+          player.vy >= 0
+        ) {
+          player.y = b.y - player.height;
+          player.vy = 0;
+          player.grounded = true;
+          player.jumpsLeft = 2; // Reset double jump
+        }
+      });
+
+      // Fruit collision check
+      fruits.forEach(f => {
+        if (f.collected) return;
+        const dx = (player.x + player.width / 2) - f.x;
+        const dy = (player.y + player.height / 2) - f.y;
+        const dist = Math.hypot(dx, dy);
+
+        if (dist < player.width / 2 + f.radius) {
+          f.collected = true;
+          if (f.data.isGood) {
+            collectedGoodCount++;
+            sfx.playGood();
+            updateHUD();
+            if (collectedGoodCount >= 10) {
+              endGame(true);
+            }
+          } else {
+            badCollectedCount++;
+            lives--;
+            sfx.playBad();
+            triggerScreenFlash();
+            updateHUD();
+            if (lives <= 0) {
+              endGame(false);
+            }
+          }
+        }
+      });
+
+      // Particle physics
+      particles.forEach(p => {
+        p.y += p.speedY;
+        p.x += p.speedX;
+        p.rotation += 0.02;
+        if (p.y > worldHeight) p.y = 0;
+        if (p.x < 0) p.x = worldWidth;
+        if (p.x > worldWidth) p.x = 0;
+      });
+
+      // Smooth vertical camera follow
+      let targetCameraY = player.y - canvas.height / (2 * (canvas.width / worldWidth)) + 100;
+      targetCameraY = Math.max(0, Math.min(worldHeight - canvas.height * (worldWidth / canvas.width), targetCameraY));
+      cameraY += (targetCameraY - cameraY) * 0.1;
+    }
+
+    function triggerScreenFlash() {
+      const overlay = document.getElementById('damageOverlay');
+      overlay.style.opacity = '1';
+      setTimeout(() => { overlay.style.opacity = '0'; }, 300);
+    }
+
+    function updateHUD() {
+      document.getElementById('fruitCount').innerText = collectedGoodCount;
+      
+      // Heart icons rendering
+      const livesContainer = document.getElementById('livesContainer');
+      let heartsHtml = '';
+      for (let i = 0; i < 3; i++) {
+        heartsHtml += i < lives ? '❤️' : '🖤';
+      }
+      livesContainer.innerHTML = heartsHtml;
+
+      // Dynamic live score preview
+      const timeBonus = Math.max(100, 2000 - elapsedTime * 10);
+      const currentScore = Math.max(0, (collectedGoodCount * 1000) + timeBonus + (lives * 300) - (badCollectedCount * 400));
+      document.getElementById('scoreText').innerText = currentScore;
+    }
+
+    function render() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Save context for camera view scaling
+      ctx.save();
+      const scale = canvas.width / worldWidth;
+      ctx.scale(scale, scale);
+      ctx.translate(0, -cameraY);
+
+      // 1. Sky Gradient Background
+      const skyGrad = ctx.createLinearGradient(0, 0, 0, worldHeight);
+      skyGrad.addColorStop(0, '#1e3c72');
+      skyGrad.addColorStop(0.5, '#2a5298');
+      skyGrad.addColorStop(1, '#87CEEB');
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(0, 0, worldWidth, worldHeight);
+
+      // 2. Trunk of Ancient Friendship Tree
+      ctx.fillStyle = '#4a2e18';
+      ctx.fillRect(worldWidth / 2 - 90, 0, 180, worldHeight);
+      
+      // Bark texture detail
+      ctx.fillStyle = '#382211';
+      for (let i = 0; i < worldHeight; i += 120) {
+        ctx.fillRect(worldWidth / 2 - 70, i, 20, 60);
+        ctx.fillRect(worldWidth / 2 + 40, i + 40, 20, 50);
+      }
+
+      // 3. Leaf Particles Background
+      particles.forEach(p => {
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rotation);
+        ctx.fillStyle = '#4ade80';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, p.size, p.size / 2, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      });
+
+      // 4. Multi-level Organic Branches
+      branches.forEach(b => {
+        if (b.isGround) {
+          // Grass Floor
+          ctx.fillStyle = '#15803d';
+          ctx.fillRect(b.x, b.y, b.width, b.height);
+          ctx.fillStyle = '#22c55e';
+          ctx.fillRect(b.x, b.y, b.width, 14);
+        } else {
+          // Branch wood
+          ctx.fillStyle = '#5c3a21';
+          ctx.beginPath();
+          ctx.roundRect(b.x, b.y, b.width, b.height, 10);
+          ctx.fill();
+
+          // Leaf topper on branch
+          ctx.fillStyle = '#22c55e';
+          ctx.beginPath();
+          ctx.roundRect(b.x - 8, b.y - 6, b.width + 16, 12, 6);
+          ctx.fill();
+        }
+      });
+
+      // 5. Glossy Red Apples with Text Badges
+      fruits.forEach(f => {
+        if (f.collected) return;
+
+        f.pulse += 0.05;
+        const floatY = f.y + Math.sin(f.pulse) * 3;
+
+        // Apple Stem & Leaf
+        ctx.fillStyle = '#15803d';
+        ctx.beginPath();
+        ctx.ellipse(f.x + 4, floatY - 18, 6, 3, Math.PI / 4, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = '#382211';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(f.x, floatY - 12);
+        ctx.quadraticCurveTo(f.x + 2, floatY - 18, f.x + 4, floatY - 20);
+        ctx.stroke();
+
+        // Bright Red Apple Body
+        const redGrad = ctx.createRadialGradient(f.x - 4, floatY - 4, 2, f.x, floatY, f.radius);
+        redGrad.addColorStop(0, '#ff6b6b');
+        redGrad.addColorStop(0.7, '#dc2626');
+        redGrad.addColorStop(1, '#991b1b');
+        ctx.fillStyle = redGrad;
+
+        ctx.beginPath();
+        ctx.arc(f.x, floatY, f.radius, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Glossy Shine
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+        ctx.beginPath();
+        ctx.arc(f.x - 6, floatY - 6, 4, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Text Badge Label underneath Red Apple
+        ctx.font = 'bold 13px "Noto Sans TC", sans-serif';
+        const textWidth = ctx.measureText(f.data.name).width;
+        
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+        ctx.beginPath();
+        ctx.roundRect(f.x - textWidth / 2 - 8, floatY + 20, textWidth + 16, 22, 6);
+        ctx.fill();
+        ctx.strokeStyle = '#fbbf24';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.textAlign = 'center';
+        ctx.fillText(f.data.name, f.x, floatY + 35);
+      });
+
+      // 6. Cute Squirrel Character
+      drawSquirrel(player.x, player.y, player.width, player.height, player.facing);
+
+      ctx.restore();
+    }
+
+    // Vector drawing for Squirrel Character
+    function drawSquirrel(x, y, w, h, facing) {
+      ctx.save();
+      ctx.translate(x + w / 2, y + h / 2);
+      if (facing === 'left') ctx.scale(-1, 1);
+
+      // Fluffy Tail
+      ctx.fillStyle = '#d97706';
+      ctx.beginPath();
+      ctx.arc(-16, -4, 18, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#f59e0b';
+      ctx.beginPath();
+      ctx.arc(-14, -4, 12, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Body
+      ctx.fillStyle = '#ea580c';
+      ctx.beginPath();
+      ctx.ellipse(0, 4, 16, 18, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Belly
+      ctx.fillStyle = '#fef3c7';
+      ctx.beginPath();
+      ctx.ellipse(4, 6, 8, 12, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Head
+      ctx.fillStyle = '#ea580c';
+      ctx.beginPath();
+      ctx.arc(6, -12, 14, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Ears
+      ctx.fillStyle = '#ea580c';
+      ctx.beginPath();
+      ctx.moveTo(2, -22);
+      ctx.lineTo(8, -32);
+      ctx.lineTo(12, -22);
+      ctx.fill();
+
+      // Eye
+      ctx.fillStyle = '#000000';
+      ctx.beginPath();
+      ctx.arc(10, -14, 3, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(11, -15, 1, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    // Main Loop RAF
+    function gameLoop() {
+      update();
+      render();
+      requestAnimationFrame(gameLoop);
+    }
+
+    function startTimer() {
+      clearInterval(timerInterval);
+      startTime = Date.now();
+      timerInterval = setInterval(() => {
+        elapsedTime = Math.floor((Date.now() - startTime) / 1000);
+        const mins = String(Math.floor(elapsedTime / 60)).padStart(2, '0');
+        const secs = String(elapsedTime % 60).padStart(2, '0');
+        document.getElementById('timerText').innerText = `${mins}:${secs}`;
+      }, 1000);
+    }
+
+    function startGame() {
+      sfx.init();
+      lives = 3;
+      collectedGoodCount = 0;
+      badCollectedCount = 0;
+      elapsedTime = 0;
+      gameActive = true;
+
+      player.x = worldWidth / 2 - player.width / 2;
+      player.y = 3450;
+      player.vx = 0;
+      player.vy = 0;
+
+      buildTreeWorld();
+      initParticles();
+      updateHUD();
+      startTimer();
+
+      document.getElementById('startOverlay').classList.add('hidden');
+      document.getElementById('resultModal').classList.add('hidden');
+      document.getElementById('certModal').classList.add('hidden');
+    }
+
+    function endGame(isWin) {
+      gameActive = false;
+      clearInterval(timerInterval);
+
+      const titleEl = document.getElementById('resultTitle');
+      const starEl = document.getElementById('starRating');
+
+      if (isWin) {
+        sfx.playVictory();
+        titleEl.innerText = "🎉 恭喜！成功成為友誼大使！";
+        titleEl.className = "text-3xl md:text-4xl font-black text-amber-300";
+      } else {
+        titleEl.innerText = "💔 冒險中斷，再接再厲！";
+        titleEl.className = "text-3xl md:text-4xl font-black text-rose-400";
+      }
+
+      // Calculations
+      const baseGood = collectedGoodCount * 1000;
+      const timeBonus = isWin ? Math.max(100, 2000 - elapsedTime * 10) : 0;
+      const heartsBonus = lives * 300;
+      const penalty = badCollectedCount * 400;
+      const finalScore = Math.max(0, baseGood + timeBonus + heartsBonus - penalty);
+
+      document.getElementById('scoreBase').innerText = `+${baseGood}`;
+      document.getElementById('scoreTime').innerText = `+${timeBonus}`;
+      document.getElementById('scoreHearts').innerText = `+${heartsBonus}`;
+      document.getElementById('scorePenalty').innerText = `-${penalty}`;
+      document.getElementById('scoreFinal').innerText = finalScore;
+
+      // Stars calculation
+      if (isWin && lives === 3) {
+        starEl.innerText = "⭐⭐⭐";
+      } else if (isWin || finalScore >= 8000) {
+        starEl.innerText = "⭐⭐";
+      } else {
+        starEl.innerText = "⭐";
+      }
+
+      // Populate Educational Review List
+      const reviewList = document.getElementById('reviewList');
+      reviewList.innerHTML = '';
+
+      GOOD_VALUES.forEach(v => {
+        const item = document.createElement('div');
+        item.className = "p-2 bg-emerald-900/80 rounded border border-emerald-700/60";
+        item.innerHTML = `<span class="text-amber-300 font-bold">✨ ${v.name}:</span> <span class="text-emerald-100">${v.desc}</span>`;
+        reviewList.appendChild(item);
+      });
+
+      document.getElementById('resultModal').classList.remove('hidden');
+    }
+
+    function resizeCanvas() {
+      const container = canvas.parentElement;
+      canvas.width = container.clientWidth;
+      canvas.height = container.clientHeight;
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+
+    // Keyboard support fallback
+    window.addEventListener('keydown', (e) => {
+      sfx.init();
+      if (e.key === 'ArrowLeft' || e.key === 'a') keys.left = true;
+      if (e.key === 'ArrowRight' || e.key === 'd') keys.right = true;
+      if (e.key === 'ArrowUp' || e.key === 'w' || e.key === ' ') doJump();
+    });
+
+    window.addEventListener('keyup', (e) => {
+      if (e.key === 'ArrowLeft' || e.key === 'a') keys.left = false;
+      if (e.key === 'ArrowRight' || e.key === 'd') keys.right = false;
+    });
+
+    window.onload = () => {
+      resizeCanvas();
+      bindiPadControls();
+      
+      document.getElementById('startBtn').onclick = startGame;
+      document.getElementById('restartBtn').onclick = startGame;
+      
+      document.getElementById('certBtn').onclick = () => {
+        const now = new Date();
+        document.getElementById('certDate').innerText = `日期: ${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        document.getElementById('certModal').classList.remove('hidden');
+      };
+
+      document.getElementById('closeCertBtn').onclick = () => {
+        document.getElementById('certModal').classList.add('hidden');
+      };
+
+      requestAnimationFrame(gameLoop);
+    };
+  </script>
 </body>
 </html>
